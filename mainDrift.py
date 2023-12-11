@@ -264,7 +264,6 @@ def main():
         colors_ = [colors.to_rgb("#000000") for i in range(scatter_x.size)]
         for color_y, color in xy_color.loc[idx].items():
             if isinstance(color, str) and color != 'nan':
-                print(color_y, "   ", idx)
                 colors_[int(color_y - minY + 80): int(color_y - minY + 120)] = [colors.to_rgb(color) for i in range(40)]
 
         subplots["cluster"].scatter(scatter_x, scatter_y, s=0.01, c=colors_)
