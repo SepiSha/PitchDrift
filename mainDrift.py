@@ -57,12 +57,12 @@ def main():
 
     globs.X, Y_centOriginal = readPitchTimeDomain.readPitchTimeDomain(datamatrix)
     print("Pitch File read and saved in datamatrix")
-    fig, subplot = plt.subplots()
+    fig, subplot = plt.subplots(figsize=(24, 12))
     Y_centNan = np.copy(Y_centOriginal)
     Y_centNan[Y_centNan == 0] = np.nan
 
-    subplot.plot(Y_centNan)
-    if (notPAPERprint):
+    subplot.plot(Y_centNan, linewidth=0.5, color="k")
+    if notPAPERprint:
         subplot.set_title("Time-Frequency")
     subplot.set_xlabel('time')
     subplot.set_ylabel('detected frequencies (cents)')
@@ -221,7 +221,6 @@ def main():
     unique_labels = set(labels)
     colors_ = [choice(list(colors.TABLEAU_COLORS.values())) for i in np.linspace(0, 1, len(unique_labels))]
     xy_color = pd.DataFrame()
-
     for k, col in zip(unique_labels, colors_):
         if k == -1:
             # Black used for noise.
@@ -230,16 +229,15 @@ def main():
 
         xy = matrix2[class_member_mask & core_samples_mask]
         subplots["cluster"].plot(xy[:, 0], xy[:, 1] / 10, "o", markerfacecolor=col, markeredgecolor=col,
-                                 markersize=14)
+                                 markersize=4)
         for row_number in range(xy.shape[0]):
             xy_color.loc[tuple(xy[row_number].astype(int))] = col
         xy = matrix2[class_member_mask & ~core_samples_mask]
         subplots["cluster"].plot(xy[:, 0], xy[:, 1] / 10, "o", markerfacecolor=col, markeredgecolor=col,
-                                 markersize=6)
+                                 markersize=4)
 
-    # xy_color.columns /= 10
-    # xy_color.fillna((0,0,0), inplace=True)
-    # xy_color.replace('nan', (0,0,0), inplace=True)
+    xy_color.columns /= 10
+    xy_color.replace('nan', np.nan, inplace=True)
     for p in range(n_clusters_):
         xrange = range(1 + int(samples_w_lbls.max(0)[0]))
         yrange = mm[p] * xrange + bb[p]
@@ -257,21 +255,21 @@ def main():
                                Y_centExtrapolated[segment.curveBeg: segment.curveEnd],
                                linewidth=0.2)
 
-        # color = np.full(fill_value="k", shape=segment.hist.shape)
-        # for i in xy_color.columns:
-        #     try:
-        #         color[int(i)] = xy_color.loc[idx, i]
-        #     except IndexError:
-        #         pass
-        subplots["cluster"].plot((segment.hist[int(minY - 100): int(maxY + 100)] / 1.5) + start_point,
-                                    np.arange(subplots["cluster"].get_ylim()[0],
-                                              subplots["cluster"].get_ylim()[0] + segment.hist[
-                                                                                  int(minY - 100): int(maxY +
-                                                                                                       100)
-                                                                                  ].size),
-                                    linewidth=0.5, color="k")
+        scatter_x = (segment.hist[int(minY - 100): int(maxY + 100)] / 1.5) + start_point
+        scatter_y = np.arange(subplots["cluster"].get_ylim()[0],
+                              subplots["cluster"].get_ylim()[0] + segment.hist[
+                                                                  int(minY - 100): int(maxY +
+                                                                                       100)
+                                                                  ].size)
+        colors_ = [colors.to_rgb("#000000") for i in range(scatter_x.size)]
+        for color_y, color in xy_color.loc[idx].items():
+            if isinstance(color, str) and color != 'nan':
+                print(color_y, "   ", idx)
+                colors_[int(color_y - minY + 80): int(color_y - minY + 120)] = [colors.to_rgb(color) for i in range(40)]
+
+        subplots["cluster"].scatter(scatter_x, scatter_y, s=0.01, c=colors_)
     subplots["audio"].tick_params(axis="x", which='both', bottom=False, labelbottom=False)
-    subplots["audio"].set_ylim(minY, maxY)
+    subplots["audio"].set_ylim(minY - 500, maxY + 500)
     subplots["cluster"].set_xlabel('sentence number')
     subplots["cluster"].set_ylabel('detected frequencies')
     subplots["cluster"].set_xticks([x for x in range(seg.size)])
