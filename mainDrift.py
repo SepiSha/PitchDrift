@@ -112,6 +112,7 @@ def main():
 
     locs_table = np.zeros(shape=(0, 10))
     count_table = 0
+    segment_bounderies = pd.DataFrame(columns=["start", "finish", "peaks"], index=range(seg.size))
     for s in np.arange(1 - 1, len(seg)):
         histogram_smooth_parts, histo_start_parts, histo_end_parts, y_cent_histo_parts = histofinder.histofinder(
             y_cent_extrapolated[seg[s].curveBeg:seg[s].curveEnd])
@@ -148,24 +149,34 @@ def main():
         locs_table = np.append(locs_table, max_locs_parts.reshape(1, 10)).reshape(count_table, 10)
         seg[s].hist = histogram_smooth_parts
         seg[s].hist /= seg[s].hist.max().item()
+        segment_bounderies.loc[s, "peaks"] = histo_smooth_max_locs_parts
+        segment_bounderies.loc[s, "start"] = seg[s].curveBeg
+        segment_bounderies.loc[s, "finish"] = seg[s].curveEnd
 
     x_coordinates = np.zeros(0)
     y_coordinates = np.zeros(0)
     fig, subplot = plt.subplots()
+    segment_bounderies["tick_positions"] = ((segment_bounderies["finish"] - segment_bounderies["start"]) / 2
+                                            ) + segment_bounderies["start"]
+    for idx, row in segment_bounderies.iterrows():
+        subplot.scatter([(row["tick_positions"]) for i in range(row["peaks"].size)],
+                        row["peaks"], color="b")
     for m in np.arange(1 - 1, (locs_table.shape[0])):
         for k in np.arange(1 - 1, 10):
             if locs_table[m, k] != 0:
                 x_coordinates = np.append(x_coordinates, m)
                 y_coordinates = np.append(y_coordinates, int(locs_table[m, k]) * 10)
 
-    subplot.scatter(x_coordinates, y_coordinates / 10)
+    # subplot.scatter(x_coordinates, y_coordinates / 10)
+    subplot.set_xticks(segment_bounderies["tick_positions"].values.tolist(),
+                       labels= segment_bounderies.index.tolist())
     min_y = np.nanmin(y_coordinates) / 10
     max_y = np.nanmax(y_coordinates) / 10
     if NOT_PAPER_PRINT:
         subplot.set_title("Detected frequencies in segments")
     subplot.set_xlabel('sentence number')
     subplot.set_ylabel('detected frequencies')
-    subplot.set_xticks([x for x in range(seg.size)])
+    # subplot.set_xticks([x for x in range(seg.size)])
     subplot.vlines(subplot.get_xticks(), 0, subplot.get_ylim()[1], linestyles="dashed", linewidth=0.2)
     fig.savefig("frequency-segment.png")
     fig.show()
@@ -255,14 +266,14 @@ def main():
         scatter_y = np.arange(subplots["cluster"].get_ylim()[0],
                               subplots["cluster"].get_ylim()[0] + segment.hist[
                                                                   int(min_y - 100): int(max_y +
-                                                                                       100)
+                                                                                        100)
                                                                   ].size)
         colors_ = [colors.to_rgb("#000000") for i in range(scatter_x.size)]
         try:
             for color_y, color in xy_color.loc[idx].items():
                 if isinstance(color, str) and color != 'nan':
                     colors_[int(color_y - min_y + 80): int(color_y - min_y + 120)] = [colors.to_rgb(color) for i in
-                                                                                    range(40)]
+                                                                                      range(40)]
 
         except KeyError:
             pass
