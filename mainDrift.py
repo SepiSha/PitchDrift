@@ -292,7 +292,8 @@ def main():
     subplots["audio"].set_ylim(min_y - 500, max_y + 500)
     subplots["cluster"].set_xlabel('time (seconds)')
     subplots["cluster"].set_ylabel('detected frequencies')
-    subplots["cluster"].set_xticks([])
+    subplots["cluster"].set_xticks(np.linspace(0, seg[-1].curveEnd, 5),
+                                   labels=int(np.linspace(0, int(result[0]), 5)))
     fig.suptitle("placeholder")
     fig.show()
     fig.savefig("classification")
