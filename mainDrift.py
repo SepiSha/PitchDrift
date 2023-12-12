@@ -153,6 +153,8 @@ def main():
         segment_bounderies.loc[s, "start"] = seg[s].curveBeg
         segment_bounderies.loc[s, "finish"] = seg[s].curveEnd
 
+    x_coordinates_v = np.zeros(0)
+    y_coordinates_v = np.zeros(0)
     x_coordinates = np.zeros(0)
     y_coordinates = np.zeros(0)
     fig, subplot = plt.subplots()
@@ -166,6 +168,9 @@ def main():
             if locs_table[m, k] != 0:
                 x_coordinates = np.append(x_coordinates, m)
                 y_coordinates = np.append(y_coordinates, int(locs_table[m, k]) * 10)
+    for _, row in segment_bounderies.iterrows():
+        y_coordinates_v = np.append(y_coordinates_v, row["peaks"] * 10)
+        x_coordinates_v = np.append(x_coordinates_v, np.repeat(row["tick_positions"],row["peaks"].size))
 
     # subplot.scatter(x_coordinates, y_coordinates / 10)
     subplot.set_xticks(segment_bounderies["tick_positions"].values.tolist(),
@@ -182,11 +187,15 @@ def main():
     fig.show()
 
     matrix = np.zeros((1, 2))
+    matrix_v = np.zeros((1, 2))
     for f in range(len(x_coordinates)):
         matrix = np.append(matrix, [x_coordinates[f], y_coordinates[f]])
+    for f in range(len(x_coordinates_v)):
+        matrix_v = np.append(matrix_v, [x_coordinates_v[f], y_coordinates_v[f]])
     matrix_2 = matrix.reshape(int(len(matrix) / 2), 2)
+    matrix_v = matrix_v.reshape(int(len(matrix_v) / 2), 2)
 
-    clustering = DBSCAN(eps=250, min_samples=3).fit(matrix_2)
+    clustering = DBSCAN(eps=300, min_samples=3).fit(matrix_2)
     core_samples_mask = np.zeros_like(clustering.labels_, dtype=bool)
     core_samples_mask[clustering.core_sample_indices_] = True
     labels = clustering.labels_
@@ -212,7 +221,7 @@ def main():
 
     print("Estimated number of clusters: %d" % n_clusters_)
     print("Estimated number of noise points: %d" % n_noise_)
-    print("Silhouette Coefficient: %0.3f" % metrics.silhouette_score(matrix_2, labels))
+    # print("Silhouette Coefficient: %0.3f" % metrics.silhouette_score(matrix_2, labels))
 
     # #############################################################################
     # Plot result of classification
@@ -234,12 +243,12 @@ def main():
             col = [0, 0, 0, 1]
         class_member_mask = labels == k
 
-        xy = matrix_2[class_member_mask & core_samples_mask]
+        xy = matrix_v[class_member_mask & core_samples_mask]
         subplots["cluster"].plot(xy[:, 0], xy[:, 1] / 10, "o", markerfacecolor=col, markeredgecolor=col,
                                  markersize=4)
         for row_number in range(xy.shape[0]):
             xy_color.loc[tuple(xy[row_number].astype(int))] = col
-        xy = matrix_2[class_member_mask & ~core_samples_mask]
+        xy = matrix_v[class_member_mask & ~core_samples_mask]
         subplots["cluster"].plot(xy[:, 0], xy[:, 1] / 10, "o", markerfacecolor=col, markeredgecolor=col,
                                  markersize=4)
 
