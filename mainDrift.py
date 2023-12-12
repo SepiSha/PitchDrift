@@ -148,7 +148,7 @@ def main():
             max_locs_parts[li] = histo_smooth_max_locs_parts[li]
         locs_table = np.append(locs_table, max_locs_parts.reshape(1, 10)).reshape(count_table, 10)
         seg[s].hist = histogram_smooth_parts
-        seg[s].hist /= seg[s].hist.max().item()
+        # seg[s].hist /= seg[s].hist.max().item()
         segment_bounderies.loc[s, "peaks"] = histo_smooth_max_locs_parts
         segment_bounderies.loc[s, "start"] = seg[s].curveBeg
         segment_bounderies.loc[s, "finish"] = seg[s].curveEnd
@@ -170,13 +170,13 @@ def main():
                 y_coordinates = np.append(y_coordinates, int(locs_table[m, k]) * 10)
     for _, row in segment_bounderies.iterrows():
         y_coordinates_v = np.append(y_coordinates_v, row["peaks"] * 10)
-        x_coordinates_v = np.append(x_coordinates_v, np.repeat(row["tick_positions"],row["peaks"].size))
+        x_coordinates_v = np.append(x_coordinates_v, np.repeat(row["tick_positions"], row["peaks"].size))
 
     # subplot.scatter(x_coordinates, y_coordinates / 10)
     subplot.set_xticks(segment_bounderies["tick_positions"].values.tolist(),
-                       labels= segment_bounderies.index.tolist())
-    min_y = np.nanmin(y_coordinates) / 10
-    max_y = np.nanmax(y_coordinates) / 10
+                       labels=segment_bounderies.index.tolist())
+    min_y = np.nanmin(y_coordinates_v) / 10
+    max_y = np.nanmax(y_coordinates_v) / 10
     if NOT_PAPER_PRINT:
         subplot.set_title("Detected frequencies in segments")
     subplot.set_xlabel('sentence number')
@@ -204,7 +204,7 @@ def main():
     n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
     n_noise_ = list(labels).count(-1)
 
-    samples_w_labels = np.concatenate((matrix_2, labels[:, np.newaxis]), axis=1)
+    samples_w_labels = np.concatenate((matrix_v, labels[:, np.newaxis]), axis=1)
     mm = np.zeros(n_clusters_)
     bb = np.zeros(n_clusters_)
     for p in range(n_clusters_):
@@ -261,17 +261,17 @@ def main():
         subplots["cluster"].set_ylim([min_y - 100, max_y + 100])
     if NOT_PAPER_PRINT:
         subplots["cluster"].set_title(" number of clusters: %d" % n_clusters_)
-
+    maximum_hist = np.nanmax(np.concatenate([s.hist for s in seg]))
     for idx, segment in np.ndenumerate(seg):
-        start_point = idx[0]
-        end_point = idx[0] + 1
+        start_point = segment.curveBeg
+        end_point = segment.curveEnd
         num = y_cent_extrapolated[segment.curveBeg: segment.curveEnd].size
         subplots["audio"].plot(np.linspace(start_point, end_point, num),
                                y_cent_extrapolated[segment.curveBeg: segment.curveEnd],
                                linewidth=0.2,
                                color="b" if idx[0] % 2 == 1 else "r")
 
-        scatter_x = (segment.hist[int(min_y - 100): int(max_y + 100)] / 1.5) + start_point
+        scatter_x = (((segment.hist[int(min_y - 100): int(max_y + 100)]) / maximum_hist) * (seg[-1].curveEnd / len(seg))) + start_point
         scatter_y = np.arange(subplots["cluster"].get_ylim()[0],
                               subplots["cluster"].get_ylim()[0] + segment.hist[
                                                                   int(min_y - 100): int(max_y +
@@ -290,9 +290,10 @@ def main():
 
     subplots["audio"].tick_params(axis="x", which='both', bottom=False, labelbottom=False)
     subplots["audio"].set_ylim(min_y - 500, max_y + 500)
-    subplots["cluster"].set_xlabel('sentence number')
+    subplots["cluster"].set_xlabel('time (seconds)')
     subplots["cluster"].set_ylabel('detected frequencies')
-    subplots["cluster"].set_xticks([x for x in range(seg.size)])
+    subplots["cluster"].set_xticks([])
+    fig.suptitle("placeholder")
     fig.show()
     fig.savefig("classification")
     print('end of prog')
