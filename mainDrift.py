@@ -279,10 +279,10 @@ def main():
                                                                   ].size)
         colors_ = [colors.to_rgb("#000000") for i in range(scatter_x.size)]
         try:
-            for color_y, color in xy_color.loc[idx].items():
+            for color_y, color in xy_color.iloc[idx].items():
                 if isinstance(color, str) and color != 'nan':
-                    colors_[int(color_y - min_y + 80): int(color_y - min_y + 120)] = [colors.to_rgb(color) for i in
-                                                                                      range(40)]
+                    colors_[int(color_y - min_y + 70): int(color_y - min_y + 130)] = [colors.to_rgb(color) for i in
+                                                                                      range(60)]
 
         except KeyError:
             pass
