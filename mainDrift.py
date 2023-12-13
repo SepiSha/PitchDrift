@@ -32,7 +32,7 @@ def main():
     main routine
     """
     NOT_PAPER_PRINT = False
-    EQUAL_SEGMENTS = False
+    EQUAL_SEGMENTS = True
     n_sentences = 24
     file = 'Example1.mp3'
     out_p = "./" + file.replace(".mp3", "_vamp_pyin_pyin_smoothedpitchtrack.csv")
@@ -236,24 +236,28 @@ def main():
     # Black removed and is used for noise instead.
     unique_labels = set(labels)
     colors_ = [choice(list(colors.TABLEAU_COLORS.values())) for i in np.linspace(0, 1, len(unique_labels))]
-    xy_color = pd.DataFrame()
+    xy_color = pd.DataFrame(columns=segment_bounderies["tick_positions"].astype(int),
+                            index=np.concatenate([i.flatten() for i in segment_bounderies["peaks"]]))
     for k, col in zip(unique_labels, colors_):
         if k == -1:
             # Black used for noise.
             col = [0, 0, 0, 1]
         class_member_mask = labels == k
 
-        xy = matrix_v[class_member_mask & core_samples_mask]
+        xy = matrix_v[class_member_mask]
         subplots["cluster"].plot(xy[:, 0], xy[:, 1] / 10, "o", markerfacecolor=col, markeredgecolor=col,
                                  markersize=4)
         for row_number in range(xy.shape[0]):
-            xy_color.loc[tuple(xy[row_number].astype(int))] = col
-        xy = matrix_v[class_member_mask & ~core_samples_mask]
-        subplots["cluster"].plot(xy[:, 0], xy[:, 1] / 10, "o", markerfacecolor=col, markeredgecolor=col,
-                                 markersize=4)
+            if isinstance(col, str):
+                xy_color.loc[int(xy[row_number][1]/10), int(xy[row_number][0])] = col
+        # xy = matrix_v[class_member_mask & ~core_samples_mask]
+        # subplots["cluster"].plot(xy[:, 0], xy[:, 1] / 10, "o", markerfacecolor=col, markeredgecolor=col,
+        #                          markersize=4)
 
-    xy_color.columns /= 10
+    # xy_color.columns /= 10
     xy_color.replace('nan', np.nan, inplace=True)
+    xy_color.replace(np.nan, )
+    xy_color = xy_color.transpose()
     for p in range(n_clusters_):
         xrange = range(1 + int(samples_w_labels.max(0)[0]))
         yrange = mm[p] * xrange + bb[p]
@@ -271,16 +275,20 @@ def main():
                                linewidth=0.2,
                                color="b" if idx[0] % 2 == 1 else "r")
 
-        scatter_x = (((segment.hist[int(min_y - 100): int(max_y + 100)]) / maximum_hist) * (seg[-1].curveEnd / len(seg))) + start_point
+        scatter_x = (((segment.hist[int(min_y - 100): int(max_y + 100)]) / maximum_hist) * (
+                seg[-1].curveEnd / len(seg))) + start_point
         scatter_y = np.arange(subplots["cluster"].get_ylim()[0],
                               subplots["cluster"].get_ylim()[0] + segment.hist[
                                                                   int(min_y - 100): int(max_y +
                                                                                         100)
                                                                   ].size)
         colors_ = [colors.to_rgb("#000000") for i in range(scatter_x.size)]
-        for color_y, color in xy_color.iloc[idx].items():
+
+        for color_y, color in xy_color.iloc[idx[0]].items():
             if isinstance(color, str) and color != 'nan':
-                colors_[int(color_y - min_y + 80): int(color_y - min_y + 120)] = [colors.to_rgb(color) for i in range(40)]
+                colors_[int(color_y - min_y + 80): int(color_y - min_y + 120)] = [colors.to_rgb(color) for i in
+                                                                                  range(40)]
+
         subplots["cluster"].scatter(scatter_x, scatter_y, s=0.01, c=colors_)
 
     subplots["audio"].tick_params(axis="x", which='both', bottom=False, labelbottom=False)
