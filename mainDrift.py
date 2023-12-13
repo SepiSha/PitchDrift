@@ -278,14 +278,9 @@ def main():
                                                                                         100)
                                                                   ].size)
         colors_ = [colors.to_rgb("#000000") for i in range(scatter_x.size)]
-        try:
-            for color_y, color in xy_color.iloc[idx].items():
-                if isinstance(color, str) and color != 'nan':
-                    colors_[int(color_y - min_y + 70): int(color_y - min_y + 130)] = [colors.to_rgb(color) for i in
-                                                                                      range(60)]
-
-        except KeyError:
-            pass
+        for color_y, color in xy_color.iloc[idx].items():
+            if isinstance(color, str) and color != 'nan':
+                colors_[int(color_y - min_y + 80): int(color_y - min_y + 120)] = [colors.to_rgb(color) for i in range(40)]
         subplots["cluster"].scatter(scatter_x, scatter_y, s=0.01, c=colors_)
 
     subplots["audio"].tick_params(axis="x", which='both', bottom=False, labelbottom=False)
@@ -293,7 +288,7 @@ def main():
     subplots["cluster"].set_xlabel('time (seconds)')
     subplots["cluster"].set_ylabel('detected frequencies')
     subplots["cluster"].set_xticks(np.linspace(0, seg[-1].curveEnd, 5),
-                                   labels=int(np.linspace(0, int(result[0]), 5)))
+                                   labels=np.linspace(0, int(result[0]), 5).astype(int))
     fig.suptitle("placeholder")
     fig.show()
     fig.savefig("classification")
